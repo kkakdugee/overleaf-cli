@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { execFile } from "node:child_process";
-import { readdir, mkdir } from "node:fs/promises";
+import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
@@ -124,6 +124,94 @@ server.tool(
 
     const files = await walk(dir);
     return { content: [{ type: "text", text: files.join("\n") }] };
+  }
+);
+
+// Tool: read_file
+server.tool(
+  "read_file",
+  "Read a file from an Overleaf project.",
+  {
+    project: z.string().describe("Project name from projects.json"),
+    path: z.string().describe("File path relative to project root (e.g. main.tex)"),
+  },
+  async ({ project, path }) => {
+    const p = findProject(project);
+    const dir = projectDir(p.name);
+
+    if (!existsSync(dir)) {
+      return {
+        content: [{ type: "text", text: `Project not synced yet. Run sync first.` }],
+        isError: true,
+      };
+    }
+
+    const fullPath = join(dir, path);
+    if (!fullPath.startsWith(dir)) {
+      return {
+        content: [{ type: "text", text: `Invalid path.` }],
+        isError: true,
+      };
+    }
+
+    try {
+      const content = await readFile(fullPath, "utf-8");
+      return { content: [{ type: "text", text: content }] };
+    } catch {
+      return {
+        content: [{ type: "text", text: `File not found: ${path}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: write_file
+server.tool(
+  "write_file",
+  "Write a file to an Overleaf project and push the change. Commits and pushes automatically.",
+  {
+    project: z.string().describe("Project name from projects.json"),
+    path: z.string().describe("File path relative to project root (e.g. main.tex)"),
+    content: z.string().describe("The full file content to write"),
+    message: z
+      .string()
+      .default("Update from Claude")
+      .describe("Commit message"),
+  },
+  async ({ project, path, content, message }) => {
+    const p = findProject(project);
+    const dir = projectDir(p.name);
+
+    if (!existsSync(dir)) {
+      return {
+        content: [{ type: "text", text: `Project not synced yet. Run sync first.` }],
+        isError: true,
+      };
+    }
+
+    const fullPath = join(dir, path);
+    if (!fullPath.startsWith(dir)) {
+      return {
+        content: [{ type: "text", text: `Invalid path.` }],
+        isError: true,
+      };
+    }
+
+    // Ensure parent directory exists
+    await mkdir(dirname(fullPath), { recursive: true });
+
+    // Write, stage, commit, push
+    await writeFile(fullPath, content, "utf-8");
+    await git(["add", path], dir);
+    await git(["commit", "-m", message], dir);
+    await git(["push"], dir);
+
+    return {
+      content: [
+        { type: "text", text: `Wrote ${path}, committed ("${message}"), and pushed to Overleaf.` },
+      ],
+    };
   }
 );
 
