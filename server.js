@@ -11,8 +11,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = join(__dirname, ".cache");
 const CONFIG_PATH = join(__dirname, "projects.json");
 
-// --- Config ---
-
 function loadConfig() {
   if (!existsSync(CONFIG_PATH)) {
     throw new Error(
@@ -21,8 +19,6 @@ function loadConfig() {
   }
   return JSON.parse(readFileSync(CONFIG_PATH, "utf-8")).projects;
 }
-
-// --- Git helpers ---
 
 function git(args, cwd) {
   return new Promise((resolve, reject) => {
@@ -40,8 +36,6 @@ function projectDir(name) {
   return join(CACHE_DIR, name);
 }
 
-// --- File walking ---
-
 async function walk(dir, base = dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
@@ -56,8 +50,6 @@ async function walk(dir, base = dir) {
   }
   return files;
 }
-
-// --- Load config ---
 
 let projects;
 try {
@@ -78,14 +70,11 @@ function findProject(name) {
   return p;
 }
 
-// --- MCP Server ---
-
 const server = new McpServer({
   name: "overleaf",
   version: "1.0.0",
 });
 
-// Tool: sync
 server.tool(
   "sync",
   "Pull the latest version of an Overleaf project. Clones on first use, pulls after. Always call this before reading to ensure you have the latest.",
@@ -106,7 +95,6 @@ server.tool(
   }
 );
 
-// Tool: list_files
 server.tool(
   "list_files",
   "List all files in an Overleaf project.",
@@ -127,7 +115,6 @@ server.tool(
   }
 );
 
-// Tool: read_file
 server.tool(
   "read_file",
   "Read a file from an Overleaf project.",
@@ -166,7 +153,6 @@ server.tool(
   }
 );
 
-// Tool: write_file
 server.tool(
   "write_file",
   "Write a file to an Overleaf project and push the change. Commits and pushes automatically.",
@@ -198,10 +184,7 @@ server.tool(
       };
     }
 
-    // Ensure parent directory exists
     await mkdir(dirname(fullPath), { recursive: true });
-
-    // Write, stage, commit, push
     await writeFile(fullPath, content, "utf-8");
     await git(["add", path], dir);
     await git(["commit", "-m", message], dir);
@@ -214,8 +197,6 @@ server.tool(
     };
   }
 );
-
-// --- Start ---
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
