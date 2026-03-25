@@ -10,6 +10,17 @@ import { existsSync, readFileSync } from "node:fs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = join(__dirname, ".cache");
 const CONFIG_PATH = join(__dirname, "projects.json");
+const ENV_PATH = join(__dirname, ".env");
+
+function loadEnv() {
+  if (!existsSync(ENV_PATH)) return {};
+  const env = {};
+  for (const line of readFileSync(ENV_PATH, "utf-8").split("\n")) {
+    const match = line.match(/^\s*([^#=]+?)\s*=\s*(.*?)\s*$/);
+    if (match) env[match[1]] = match[2];
+  }
+  return env;
+}
 
 function loadConfig() {
   if (!existsSync(CONFIG_PATH)) {
@@ -17,7 +28,15 @@ function loadConfig() {
       "projects.json not found. Copy projects.json.example to projects.json and fill in your Overleaf project details."
     );
   }
-  return JSON.parse(readFileSync(CONFIG_PATH, "utf-8")).projects;
+  const env = loadEnv();
+  const projects = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")).projects;
+  const token = env.OVERLEAF_TOKEN;
+  if (token) {
+    for (const p of projects) {
+      p.git_url = p.git_url.replace("://git.overleaf.com", `://git:${token}@git.overleaf.com`);
+    }
+  }
+  return projects;
 }
 
 function git(args, cwd) {
