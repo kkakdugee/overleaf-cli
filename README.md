@@ -30,17 +30,10 @@ cp .env.example .env
 
 Then edit `.env` with your token (from Overleaf Account Settings > Git Integration).
 
-Add it to your Claude Code MCP config:
+Add it to Claude Code:
 
-```json
-{
-  "mcpServers": {
-    "overleaf": {
-      "command": "node",
-      "args": ["/absolute/path/to/overleaf-cli/server.js"]
-    }
-  }
-}
+```
+claude mcp add --scope user overleaf -- node /absolute/path/to/overleaf-cli/server.js
 ```
 
 Restart Claude Code and you're good.
