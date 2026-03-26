@@ -245,5 +245,34 @@ server.tool(
   }
 );
 
+server.tool(
+  "delete_file",
+  "Delete a file from an Overleaf project and push the change.",
+  {
+    project: z.string().describe("Project name from projects.json"),
+    path: z.string().describe("File path relative to project root (e.g. old-draft.tex)"),
+    message: z.string().default("Delete file").describe("Commit message"),
+  },
+  async ({ project, path, message }) => {
+    const p = findProject(project);
+    const dir = projectDir(p.name);
+
+    if (!existsSync(dir)) {
+      return { content: [{ type: "text", text: `Project not synced yet. Run sync first.` }], isError: true };
+    }
+
+    const fullPath = join(dir, path);
+    if (!fullPath.startsWith(dir) || !existsSync(fullPath)) {
+      return { content: [{ type: "text", text: `File not found: ${path}` }], isError: true };
+    }
+
+    await git(["rm", path], dir);
+    await git(["commit", "-m", message], dir);
+    await git(["push"], dir);
+
+    return { content: [{ type: "text", text: `Deleted ${path}, committed ("${message}"), and pushed to Overleaf.` }] };
+  }
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);

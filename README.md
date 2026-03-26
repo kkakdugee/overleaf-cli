@@ -73,6 +73,7 @@ Examples:
 | `list_files` | List all files in a project |
 | `read_file` | Read a file's contents |
 | `write_file` | Write a file, commit, and push to Overleaf |
+| `delete_file` | Delete a file and push to Overleaf |
 | `add_project` | Add a new project by name and Overleaf URL |
 
 ## How it works
