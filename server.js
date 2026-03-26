@@ -217,5 +217,33 @@ server.tool(
   }
 );
 
+server.tool(
+  "add_project",
+  "Add a new Overleaf project to projects.json. Accepts an Overleaf URL or project ID.",
+  {
+    name: z.string().describe("Friendly name for the project"),
+    url: z.string().describe("Overleaf project URL (e.g. https://www.overleaf.com/project/abc123) or just the project ID"),
+  },
+  async ({ name, url }) => {
+    const id = url.includes("/") ? url.split("/").pop() : url;
+    const git_url = `https://git.overleaf.com/${id}`;
+
+    const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (raw.projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+      return { content: [{ type: "text", text: `Project "${name}" already exists.` }], isError: true };
+    }
+
+    raw.projects.push({ name, git_url });
+    await writeFile(CONFIG_PATH, JSON.stringify(raw, null, 2) + "\n", "utf-8");
+
+    const env = loadEnv();
+    const token = env.OVERLEAF_TOKEN;
+    const authed_url = token ? git_url.replace("://git.overleaf.com", `://git:${token}@git.overleaf.com`) : git_url;
+    projects.push({ name, git_url: authed_url });
+
+    return { content: [{ type: "text", text: `Added "${name}" (${git_url}). You can sync it now.` }] };
+  }
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);

@@ -16,26 +16,21 @@ Install dependencies:
 npm install
 ```
 
-Copy the example config and add your project:
+Create a `projects.json` (can be empty to start, projects can be added through Claude):
 
 ```
 cp projects.json.example projects.json
 ```
 
-Edit `projects.json` with your Overleaf Git URL (find it in Overleaf under Menu > Git):
+Add your Overleaf token to `.env`:
 
-```json
-{
-  "projects": [
-    {
-      "name": "math-homework",
-      "git_url": "https://git.overleaf.com/YOUR_PROJECT_ID"
-    }
-  ]
-}
+```
+cp .env.example .env
 ```
 
-Then add it to your Claude Code MCP config:
+Then edit `.env` with your token (from Overleaf Account Settings > Git Integration).
+
+Add it to your Claude Code MCP config:
 
 ```json
 {
@@ -58,8 +53,7 @@ Examples:
 - "list the files in math-homework"
 - "read main.tex from math-homework"
 - "add a new section about integrals to main.tex and push it"
-
-The first time you sync, git will ask for credentials. Username can be anything, password is your Overleaf token (Account Settings > Git Integration). You can store it with `git credential` so it doesn't keep asking.
+- "add my project https://www.overleaf.com/project/abc123 as phys-225"
 
 ## Tools
 
@@ -69,6 +63,7 @@ The first time you sync, git will ask for credentials. Username can be anything,
 | `list_files` | List all files in a project |
 | `read_file` | Read a file's contents |
 | `write_file` | Write a file, commit, and push to Overleaf |
+| `add_project` | Add a new project by name and Overleaf URL |
 
 ## How it works
 
